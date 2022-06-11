@@ -84,23 +84,32 @@ client.on("messageCreate", async (message) => {
             content = "Server"
         }
 
-        var server = await axios.get(`https://mcapi.us/server/status?ip=${serverIP}`);
-
-        if (server.data.status !== 'success') {
-            await message.channel.send("No server found");
+        var server = await axios.get(`https://api.mcsrvstat.us/2/${serverIP}`);
+        console.log(server.data.players.list)
+        if (!server.data.online) {
+            await message.channel.send("Offline or not found");
             return;
         }
 
         const serverEmbed = new MessageEmbed()
             .setColor('BLURPLE')
             .setTitle(serverIP)
-            .setDescription(server.data.motd)
+            .setDescription(server.data.motd.clean[0])
             .setThumbnail(`https://api.mcsrvstat.us/icon/${serverIP}`)
             .addFields(
-                {name: "Player count", value: `${server.data.players.now}/${server.data.players.max}`},
-                {name: "Version", value: `${server.data.server.name}`}
+                {name: "Player count", value: `${server.data.players.online}/${server.data.players.max}`, inline: true},
+                {name: "Version", value: server.data.version, inline: true},
+                {name: "Software", value: server.data.software, inline: true}
             )
-            .setFooter({text: `Last updated ${new Date(server.data.last_updated * 1000).toLocaleString(("en-GB"))}`})
+            // .setFooter({text: `Last updated ${new Date(server.data.last_updated * 1000).toLocaleString(("en-GB"))}`})
+
+        if (server.data.players.online < 10 && server.data.players.online > 0) {
+            players = "";
+            for (var i = 0; i < server.data.players.list.length; i++) {
+                players = players.concat("\n", server.data.players.list[i])
+            }
+            serverEmbed.addField("Players:", players, true)
+        }
         
         await message.channel.send({embeds: [serverEmbed]})
     }
