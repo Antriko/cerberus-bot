@@ -99,12 +99,12 @@ client.on("messageCreate", async (message) => {
             .addFields(
                 {name: "Player count", value: `${server.data.players.online}/${server.data.players.max}`, inline: true},
                 {name: "Version", value: server.data.version, inline: true},
-                {name: "Software", value: server.data.software, inline: true}
+                {name: "Software", value: server.data.software ? server.data.software : "Vanilla", inline: true}
             )
             // .setFooter({text: `Last updated ${new Date(server.data.last_updated * 1000).toLocaleString(("en-GB"))}`})
 
         if (server.data.players.online < 10 && server.data.players.online > 0) {
-            players = "";
+            players = " ";
             for (var i = 0; i < server.data.players.list.length; i++) {
                 players = players.concat("\n", server.data.players.list[i])
             }
