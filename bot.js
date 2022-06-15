@@ -25,14 +25,12 @@ client.on("messageCreate", async (message) => {
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     args.shift();
     console.log(args);
-    
+
     if (message.content.startsWith(`${prefix}news`)) { 
         postNews(args, message)
     }
 
     if (message.content.startsWith(`${prefix}server`)) {
-        var serverIP; String;
-        var content; String;
         if (args.length > 0) {
             serverIP = args[0];
             content = `Server information on ${args.join(" ")}`;
