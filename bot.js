@@ -13,8 +13,8 @@ client.on('ready', () => {
 
     const rule = new schedule.RecurrenceRule();
     rule.hour = [7, 13, 17];
-    rule.minute = 4;
-    rule.second = 30;
+    rule.minute = 0;
+    rule.second = 0;
     const posting = schedule.scheduleJob(rule, postNews);
 });
 
