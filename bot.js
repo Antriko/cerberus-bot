@@ -25,11 +25,7 @@ client.on("messageCreate", async (message) => {
     const args = message.content.slice(prefix.length).trim().split(/ +/g);
     args.shift();
     console.log(args);
-
-    if (message.content.startsWith(`${prefix}cum`)) {
-        message.channel.send('piss');
-    }
-
+    
     if (message.content.startsWith(`${prefix}news`)) { 
         postNews(args, message)
     }
