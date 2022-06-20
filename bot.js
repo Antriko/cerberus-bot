@@ -122,8 +122,13 @@ async function postNews(args, message) {
         req = `https://newsapi.org/v2/top-headlines?country=gb&language=en&apiKey=${process.env.NEWS_API}` 
         content = "Top headlines from UK"
     } else if (args.length > 0) {
-        req = `https://newsapi.org/v2/everything?q=${args.join("_")}&language=en&apiKey=${process.env.NEWS_API}`
-        content = `Articles about ${args.join(" ")}`;
+        if (args[0].toLowerCase() == 'zero' || args[0].toLowerCase() == 'zerohedge') {
+            req = `https://newsapi.org/v2/everything?domains=zerohedge.com&apiKey=${process.env.NEWS_API}`
+            content = `Articles from ZeroHedge`
+        } else {
+            req = `https://newsapi.org/v2/everything?q=${args.join("_")}&language=en&apiKey=${process.env.NEWS_API}`
+            content = `Articles about ${args.join(" ")}`;
+        }
     } else {
         req = `https://newsapi.org/v2/top-headlines?country=gb&language=en&apiKey=${process.env.NEWS_API}` 
         content = "Top headlines from UK"
