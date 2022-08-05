@@ -95,17 +95,19 @@ client.on("messageCreate", async (message) => {
 });
 
 function getNewsEmbed(data, index) {
+    // console.log(data[index])
+    // There is no short desc and image with free tier
     const newsEmbed = new MessageEmbed()
         .setColor('BLURPLE')
         .setTitle(data[index].title)
-        .setURL(data[index].url)
-        .setDescription(data[index].description)
-        .setImage(data[index].urlToImage)
+        .setURL(data[index].link)
+        // .setDescription(data[index].description)
+        // .setImage(data[index].urlToImage)
         .addFields(
             {name: "Page", value: `${index+1} of ${data.length}`, inline: true},
-            {name: "Source", value: data[index].source.name, inline: true}
+            {name: "Source", value: data[index].source.title, inline: true}
             )
-        .setFooter({ text: `Published on ${new Date(data[index].publishedAt).toLocaleString(("en-GB"))}`})
+        .setFooter({ text: `Published on ${new Date(data[index].published_date).toLocaleString(("en-GB"))}`})
     return newsEmbed;
 
 }
@@ -116,26 +118,46 @@ async function postNews(args, message) {
     // Scheduler will pass time as 1st parameter
     channel = message ? message.channel : client.channels.cache.get('985898292678377544')
 
+    // News API - https://rapidapi.com/ubillarnet/api/google-news1/
+    const req = {
+        method: 'GET',
+        url: 'https://google-news1.p.rapidapi.com/top-headlines',
+        params: {country: 'GB', lang: 'en', limit: '50'},
+        headers: {
+          'X-RapidAPI-Key': process.env.NEWS_API,
+          'X-RapidAPI-Host': 'google-news1.p.rapidapi.com'
+        }
+      };
+
     if (!message) {
+        // Automatic postings
         console.log("Scheduled news posting")
-        channel.send("Martins automatic news postings")
-        req = `https://newsapi.org/v2/top-headlines?country=gb&language=en&apiKey=${process.env.NEWS_API}` 
+        channel.send("Martins automatic news postings") 
         content = "Top headlines from UK"
     } else if (args.length > 0) {
-        if (args[0].toLowerCase() == 'zero' || args[0].toLowerCase() == 'zerohedge') {
-            req = `https://newsapi.org/v2/everything?domains=zerohedge.com&apiKey=${process.env.NEWS_API}`
-            content = `Articles from ZeroHedge`
-        } else {
-            req = `https://newsapi.org/v2/everything?q=${args.join("_")}&language=en&apiKey=${process.env.NEWS_API}`
-            content = `Articles about ${args.join(" ")}`;
+        // Search news
+        req.url = 'https://google-news1.p.rapidapi.com/search'
+        req.params = {
+            q: args.join(" "),
+            country: 'GB',
+            lang: 'en',
+            limit: '50',
+            when: '30d'
         }
+        content = `Articles about ${args.join(" ")}`;
     } else {
-        req = `https://newsapi.org/v2/top-headlines?country=gb&language=en&apiKey=${process.env.NEWS_API}` 
+        // Top headlines
         content = "Top headlines from UK"
     }
 
 
-    var resp = await axios.get(req)
+    var resp = await axios.request(req)
+        .catch(e => {
+            console.log("Request error", e)
+            channel.send("API Error, most likely reached daily limit")
+            return null;
+        })
+    if (!resp) {return;}
     var newsData = resp.data.articles;
     if (newsData.length === 0) {
         await channel.send("No articles found");
