@@ -206,7 +206,7 @@ async function postNews(args, message) {
 }
 
 async function furherFriday() {
-    channel = client.channels.cache.get('662523641006784515')
+    channel = client.channels.cache.get('985898292678377544')
     let post = await channel.send({
         content: `@everyone`, 
         files: [{
