@@ -1,4 +1,4 @@
-const { MessageAttachment, Client, Intents, MessageActionRow, MessageButton, MessageEmbed} = require("discord.js");
+const {  Client, Intents, MessageActionRow, MessageButton, MessageEmbed} = require("discord.js");
 const client = new Client({
     intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.GUILD_MESSAGES]
 });
@@ -16,6 +16,15 @@ client.on('ready', () => {
     rule.minute = 0;
     rule.second = 0;
     const posting = schedule.scheduleJob(rule, postNews);
+
+
+    // Post führer friday every friday morning
+    const friday = new schedule.RecurrenceRule();
+    friday.dayOfWeek = 5; // (0-6) Starting with Sunday
+    friday.hour = 5;
+    friday.minute = 0;
+    friday.second = 0;
+    const furher = schedule.scheduleJob(friday, furherFriday);
 });
 
 client.on("messageCreate", async (message) => {
@@ -194,4 +203,16 @@ async function postNews(args, message) {
         news.edit({content: content, embeds: [getNewsEmbed(newsData, index)], components: [response]})
         i.deferUpdate();
     });
+}
+
+async function furherFriday() {
+    channel = client.channels.cache.get('662523641006784515')
+    let post = await channel.send({
+        content: `@everyone`, 
+        files: [{
+            attachment: 'attachments/führer friday.mov',
+            name: 'führerFriday.mov',
+            description: 'its führer friday'
+        }]
+    })
 }
