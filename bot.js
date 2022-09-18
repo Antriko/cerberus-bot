@@ -125,7 +125,7 @@ client.login(process.env.TOKEN)
 
 async function postNews(args, message) {
     // Scheduler will pass time as 1st parameter
-    channel = message ? message.channel : client.channels.cache.get('985898292678377544')
+    channel = message ? message.channel : client.channels.cache.get('993912577841184898')
 
     // News API - https://rapidapi.com/ubillarnet/api/google-news1/
     const req = {
