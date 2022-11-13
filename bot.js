@@ -1,22 +1,26 @@
-const {  Client, Intents, MessageActionRow, MessageButton, MessageEmbed} = require("discord.js");
-const client = new Client({
-    intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.GUILD_MESSAGES]
-});
-const axios = require('axios').default;
-require('dotenv').config()
+const fs = require('node:fs');
+const path = require('node:path');
+const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
+require('dotenv').config();
 const schedule = require('node-schedule');
-const prefix = ".";
-                                                          
 
-client.on('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+
+client.commands = new Collection();
+const commandsPath = path.join(__dirname, 'commands');
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+
+for (const file of commandFiles) {
+	const filePath = path.join(commandsPath, file);
+	const command = require(filePath);
+	client.commands.set(command.data.name, command);
+}
+
+client.once(Events.ClientReady, () => {
+	console.log("Ready.");
+
 
     const rule = new schedule.RecurrenceRule();
-    rule.hour = [7, 13, 17];
-    rule.minute = 0;
-    rule.second = 0;
-    const posting = schedule.scheduleJob(rule, postNews);
-
 
     // Post führer friday every friday morning
     const friday = new schedule.RecurrenceRule();
@@ -27,183 +31,20 @@ client.on('ready', () => {
     const furher = schedule.scheduleJob(friday, furherFriday);
 });
 
-client.on("messageCreate", async (message) => {
-    if(message.author.bot) return; // so bot wont trigger itself
-    if (!message.content.startsWith(prefix)) return;
+client.on(Events.InteractionCreate, async interaction => {
+	if (!interaction.isChatInputCommand()) return;
 
-    const args = message.content.slice(prefix.length).trim().split(/ +/g);
-    args.shift();
-    console.log(args);
+	const command = client.commands.get(interaction.commandName);
 
-    if (message.content.startsWith(`${prefix}news`)) { 
-        postNews(args, message)
-    }
+	if (!command) return;
 
-    if (message.content.startsWith(`${prefix}server`)) {
-        if (args.length > 0) {
-            serverIP = args[0];
-            content = `Server information on ${args.join(" ")}`;
-        }
-        else {
-            serverIP = 'mc.antriko.co.uk'
-            content = "Server"
-        }
-
-        var server = await axios.get(`https://api.mcsrvstat.us/2/${serverIP}`);
-        if (!server.data.online) {
-            await message.channel.send("Offline or not found");
-            return;
-        }
-
-        const serverEmbed = new MessageEmbed()
-            .setColor('BLURPLE')
-            .setTitle(serverIP)
-            .setDescription(server.data.motd.clean[0])
-            .setThumbnail(`https://api.mcsrvstat.us/icon/${serverIP}`)
-            .addFields(
-                {name: "Player count", value: `${server.data.players.online}/${server.data.players.max}`, inline: true},
-                {name: "Version", value: server.data.version, inline: true},
-                {name: "Software", value: server.data.software ? server.data.software : "Vanilla", inline: true}
-            )
-            // .setFooter({text: `Last updated ${new Date(server.data.last_updated * 1000).toLocaleString(("en-GB"))}`})
-
-        if (server.data.players.online < 10 && server.data.players.online > 0) {
-            var players = " ";
-            for (var i = 0; i < server.data.players.list.length; i++) {
-                players = players.concat("\n", server.data.players.list[i])
-            }
-            serverEmbed.addField("Players:", players, true)
-        }
-        
-        await message.channel.send({embeds: [serverEmbed]})
-    }
-
-    if (message.content.startsWith(`${prefix}map`)) {
-        const mapEmbed = new MessageEmbed()
-            .setColor('BLURPLE')
-            .setTitle("Server map")
-            .setURL("http://mc.antriko.co.uk:8123")
-        await message.channel.send({embeds: [mapEmbed]})
-    }
-
-    if (message.content.startsWith(`${prefix}prune`)) {
-        if (message.member.permissions.has('MANAGE_MESSAGES') || message.member.id === `182204906751393795`) {
-            if (args.length < 1) {
-                message.channel.send('Prune how many? `' + prefix + 'prune [number]`')
-            } 
-            else if (!Number.isNaN(parseInt(args[0]))) {
-                var prune = parseInt(args[0]);
-                prune = ((prune) > 10 ? 10 : prune)
-                prune = ((prune) <= 0 ? 1 : prune);
-                message.channel.bulkDelete(prune+1);
-            }
-        } else {
-            message.channel.send('No permission')
-        }
-    }
+	try {
+		await command.execute(interaction);
+	} catch (error) {
+		console.error("Err?", error);
+		await interaction.reply({ content: "Error", ephemeral: true });
+	}
 });
-
-function getNewsEmbed(data, index) {
-    // console.log(data[index])
-    // There is no short desc and image with free tier
-    const newsEmbed = new MessageEmbed()
-        .setColor('BLURPLE')
-        .setTitle(data[index].title)
-        .setURL(data[index].link)
-        // .setDescription(data[index].description)
-        // .setImage(data[index].urlToImage)
-        .addFields(
-            {name: "Page", value: `${index+1} of ${data.length}`, inline: true},
-            {name: "Source", value: data[index].source.title, inline: true}
-            )
-        .setFooter({ text: `Published on ${new Date(data[index].published_date).toLocaleString(("en-GB"))}`})
-    return newsEmbed;
-
-}
-
-client.login(process.env.TOKEN)
-
-async function postNews(args, message) {
-    // Scheduler will pass time as 1st parameter
-    channel = message ? message.channel : client.channels.cache.get('993912577841184898')
-
-    // News API - https://rapidapi.com/ubillarnet/api/google-news1/
-    const req = {
-        method: 'GET',
-        url: 'https://google-news1.p.rapidapi.com/top-headlines',
-        params: {country: 'GB', lang: 'en', limit: '50'},
-        headers: {
-          'X-RapidAPI-Key': process.env.NEWS_API,
-          'X-RapidAPI-Host': 'google-news1.p.rapidapi.com'
-        }
-      };
-
-    if (!message) {
-        // Automatic postings
-        console.log("Scheduled news posting")
-        channel.send("Martins automatic news postings") 
-        content = "Top headlines from UK"
-    } else if (args.length > 0) {
-        // Search news
-        req.url = 'https://google-news1.p.rapidapi.com/search'
-        req.params = {
-            q: args.join(" "),
-            country: 'GB',
-            lang: 'en',
-            limit: '50',
-            when: '30d'
-        }
-        content = `Articles about ${args.join(" ")}`;
-    } else {
-        // Top headlines
-        content = "Top headlines from UK"
-    }
-
-
-    var resp = await axios.request(req)
-        .catch(e => {
-            console.log("Request error", e)
-            channel.send("API Error, most likely reached daily limit")
-            return null;
-        })
-    if (!resp) {return;}
-    var newsData = resp.data.articles;
-    if (newsData.length === 0) {
-        await channel.send("No articles found");
-        return;
-    }
-
-    var response = new MessageActionRow()
-        .addComponents(
-            new MessageButton()
-                .setCustomId('previous')
-                .setLabel('Previous')
-                .setStyle('PRIMARY'),
-            new MessageButton()
-                .setCustomId('next')
-                .setLabel('Next')
-                .setStyle('PRIMARY')
-        )
-
-    var index = 0;
-    let news = await channel.send({content: content, embeds: [getNewsEmbed(newsData, index)], components: [response]})
-
-    const collector = news.createMessageComponentCollector();
-    collector.on('collect', async i => {
-        if (i.customId === 'previous') {
-            index--;
-            if (index === -1) index = newsData.length - 1;
-        }
-        
-        if (i.customId === 'next') {
-            index++;
-            if (index === newsData.length) index = 0;
-        }
-
-        news.edit({content: content, embeds: [getNewsEmbed(newsData, index)], components: [response]})
-        i.deferUpdate();
-    });
-}
 
 async function furherFriday() {
     channel = client.channels.cache.get('985898292678377544')
@@ -216,3 +57,5 @@ async function furherFriday() {
         }]
     })
 }
+
+client.login(process.env.TOKEN);
