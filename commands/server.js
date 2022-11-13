@@ -1,4 +1,5 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder  } = require('discord.js');
+localIP = "localhost"
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -9,14 +10,28 @@ module.exports = {
                 .setDescription('Server IP')),
 	async execute(interaction) {
 
-        var IP = interaction.options.getString('ip') != null ? interaction.options.getString('ip') : "localhost";
+        var IP = interaction.options.getString('ip') != null ? interaction.options.getString('ip') : localIP;
+        // localhost as MC Server is hosted on same machine - mc.antriko.co.uk
 		await interaction.deferReply();
         try {
             data = await queryIP(IP);
-            console.log("DISCORD DATA", data)        
-            await interaction.editReply("Done");
+            console.log("DISCORD DATA", data, data.description)        
+            IP = localIP ? "mc.antriko.co.uk" : IP;
+            const serverEmbed = new EmbedBuilder()
+                .setColor('BLURPLE')
+                .setTitle(IP)
+                .setDescription(data.description.extra[0].text)
+                .setThumbnail(`https://api.mcsrvstat.us/icon/${IP}`)
+                .addFields(
+                    {name: "Player count", value: `${data.players.online}/${data.players.max}`, inline: true},
+                    {name: "Version", value: data.version.name, inline: true},
+                    {name: "Protocol", value: data.version.protocol.toString(), inline: true},
+                )
+
+            await interaction.editReply({embeds: [serverEmbed]});
         } catch(e) {
-            await interaction.editReply("Server not found");
+            console.log(e);
+            await interaction.editReply("Server error or not found");
         }
 	},
 };
@@ -126,30 +141,31 @@ async function queryIP(IP) {
         }
     })
 
-    await new Promise((resolve, reject) => {
+    data = await new Promise((resolve, reject) => {
         connection.on('error', (err) => {
             scan.emit('error', err);
             reject();
+            return null;
         })
         
         scan.on('success', async (data) => {
             console.log(`Success SCAN\t${IP}`)
-            console.log(data)
             resolve(data);
-            return data;
-    
         })
         
         scan.on('error', async err => {
             console.log(`Error SCAN\t${IP}`)
             console.log(err)
             reject();
+            return null;
         });
         
         scan.on('timeout', async () => {
             console.log(`Timeout SCAN\t${IP}`)
             reject();
+            return null;
         })
     })
-    return null;
+    console.log("DATA??", data)
+    return data;
 }
