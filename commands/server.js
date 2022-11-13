@@ -9,7 +9,7 @@ module.exports = {
                 .setDescription('Server IP')),
 	async execute(interaction) {
 
-        var IP = interaction.options.getString('ip') != null ? interaction.options.getString('ip') : "mc.antriko.co.uk";
+        var IP = interaction.options.getString('ip') != null ? interaction.options.getString('ip') : "localhost";
 		await interaction.deferReply();
         try {
             data = await queryIP(IP);
