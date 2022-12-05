@@ -11,8 +11,10 @@ module.exports = {
 	async execute(interaction) {
 
         var IP = interaction.options.getString('ip') != null ? interaction.options.getString('ip') : localIP;
-        // localhost as MC Server is hosted on same machine - mc.antriko.co.uk
+        console.log(IP)
+        // localhost as MC Server is hosted on same machine that the bot is running - mc.antriko.co.uk
 		await interaction.deferReply();
+
         try {
             data = await queryIP(IP);
             console.log("DISCORD DATA", data, data.description)        
@@ -54,7 +56,7 @@ var EventEmitter = require('events');
 
 function createHandshake(address, port) {
     console.log("Creating handshake function")
-    let protocolBuffer = Buffer.from(varint.encode(760)); // 1.19.1
+    let protocolBuffer = Buffer.from(varint.encode(761)); // 1.19.1
 
     let addressBuffer = Buffer.concat([
         Buffer.from(varint.encode(address.length)), 
@@ -102,7 +104,8 @@ async function queryIP(IP) {
     
         console.log("Ping");
         // Ping
-        connection.write(createPacketWithID(0, Buffer.alloc(0)))
+        connection.write(createPacketWithID(0, Buffer.alloc(0)));
+        
         // Server information should be recieved
 
         // Timeout
@@ -110,7 +113,7 @@ async function queryIP(IP) {
             scan.emit('timeout');
             connection.end();
         }, 4000);   // 4 seconds
-    });
+    })
 
     console.log("After connection")
     connection.on('data', async (data) => {
@@ -132,17 +135,20 @@ async function queryIP(IP) {
             var data = data.subarray(varint.encodingLength(fieldName))
             // console.log("FieldName", fieldName)
             
+            console.log('Before parse')
             // Get actual server data
             var data = JSON.parse(data);
 
+            console.log('After parse', data);
             scan.emit('success', data)
         } catch(e) {
-            scan.emit('error');
+            scan.emit('error', e);
         }
     })
 
     data = await new Promise((resolve, reject) => {
         connection.on('error', (err) => {
+            console.log("ERR", err)
             scan.emit('error', err);
             reject();
             return null;
@@ -169,3 +175,7 @@ async function queryIP(IP) {
     console.log("DATA??", data)
     return data;
 }
+
+
+queryIP("51.81.142.124:25573")
+.catch(() => {})
