@@ -175,7 +175,3 @@ async function queryIP(IP) {
     console.log("DATA??", data)
     return data;
 }
-
-
-queryIP("51.81.142.124:25573")
-.catch(() => {})
