@@ -22,13 +22,13 @@ client.once(Events.ClientReady, () => {
 
     const rule = new schedule.RecurrenceRule();
 
-    // Post führer friday every friday morning
-    const friday = new schedule.RecurrenceRule();
-    friday.dayOfWeek = 5; // (0-6) Starting with Sunday
-    friday.hour = 5;
-    friday.minute = 0;
-    friday.second = 0;
-    const furher = schedule.scheduleJob(friday, furherFriday);
+    // Post somethingevery friday morning
+    // const friday = new schedule.RecurrenceRule();
+    // friday.dayOfWeek = 5; // (0-6) Starting with Sunday
+    // friday.hour = 5;
+    // friday.minute = 0;
+    // friday.second = 0;
+    // const postage = schedule.scheduleJob(friday, postFunction);
 });
 
 client.on(Events.InteractionCreate, async interaction => {
@@ -45,17 +45,5 @@ client.on(Events.InteractionCreate, async interaction => {
 		await interaction.reply({ content: "Error", ephemeral: true });
 	}
 });
-
-async function furherFriday() {
-    channel = client.channels.cache.get('985898292678377544')
-    let post = await channel.send({
-        content: `@everyone`, 
-        files: [{
-            attachment: 'attachments/führer friday.mov',
-            name: 'führerFriday.mov',
-            description: 'its führer friday'
-        }]
-    })
-}
 
 client.login(process.env.TOKEN);
